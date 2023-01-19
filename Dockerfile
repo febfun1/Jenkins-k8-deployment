@@ -3,14 +3,14 @@ FROM node:14
 # Create app directory
 WORKDIR /usr/src/app
 
-COPY package.json ./
-COPY yarn.lock ./
+# Install app dependencies
+# A wildcard is used to ensure both package.json AND package-lock.json are copied
+COPY package*.json ./
 
-# Install node-modules
-RUN yarn install --frozen-lockfile
+RUN npm install
 
-COPY dist/ ./
+# Bundle app source
+COPY . .
 
 EXPOSE 3000
-
-CMD ["node", "server.js"]
+CMD [ "npm", "start" ]
