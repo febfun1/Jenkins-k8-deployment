@@ -1,37 +1,53 @@
 pipeline {
     agent any
-    
+  
+     //create dockerhub credential in github with your dockerhub Username and Password/Token
+    environment {
+      DOCKERHUB_CREDENTIALS=credentials('dockerhub')
+    }
     stages {
-
-      stage('Checkout Source') {
-      steps {
-        git url:'https://github.com/febfun1/Jenkins-k8-deployment.git', branch:'main'
+        stage('Checkout') {
+            steps {
+                git url: 'https://github.com/adeoyedewale/Backend.git'
             }
-        }       
-
+        }
         stage('Build') {
             steps {
                 sh 'npm install'
-                sh 'npm run build'
+                //sh 'npm run build'
             }
         }
-        stage('Package') {
+	    
+        stage('Dockerize') {
             steps {
-                sh 'docker build -t my-nodejs-app .'
-                sh 'docker push my-nodejs-app'
+                sh "docker build -t febfun/app:${BUILD_NUMBER} ."
             }
         }
-        stage('Deploy') {
-            steps {
-                sh 'kubectl set image deployment/my-nodejs-app my-nodejs-app=my-nodejs-app:latest'
-                sh 'kubectl rollout status deployment/my-nodejs-app'
-            }
+        //stage('Publish') {
+        //    steps {
+         //       sh "docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD"
+         //       sh "docker tag your-nodejs-app $DOCKER_USERNAME/your-nodejs-app:$BUILD_NUMBER"
+         //       sh "docker push $DOCKER_USERNAME/your-nodejs-app:$BUILD_NUMBER"
+            //}
+        stage('Login') {
+		
+              steps {
+                 sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login --username febfun --password-stdin'    
+              }
+		    }
+
+        stage('Push') {
+
+              steps {
+                 sh 'docker push febfun/app:${BUILD_NUMBER}'
+              }
         }
-        stage('Rollback') {
-            steps {
-                sh 'kubectl rollout undo deployment/my-nodejs-app'
-                sh 'kubectl rollout status deployment/my-nodejs-app'
-            }
+		}
+	
+    post {
+        always {
+	cleanWs()
+      	sh 'docker logout'
         }
-    }
+   }
 }
